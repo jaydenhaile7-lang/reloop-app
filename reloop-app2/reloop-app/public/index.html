@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reloop — One piece of content, every channel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#12181f;
+    --ink-soft:#4a5568;
+    --paper:#eaefef;
+    --paper-dim:#d9dfdf;
+    --signal:#ff5a36;
+    --signal-dim:#ff5a3622;
+    --mint:#3ddc97;
+    --line:#c7cfcf;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html{scroll-behavior:smooth;}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Inter', sans-serif;
+    line-height:1.5;
+    overflow-x:hidden;
+  }
+  @media (prefers-reduced-motion: reduce){
+    *{animation:none !important; transition:none !important;}
+  }
+  .wrap{max-width:1100px; margin:0 auto; padding:0 28px;}
+
+  /* ---------- NAV ---------- */
+  nav{
+    position:sticky; top:0; z-index:50;
+    background:var(--paper);
+    border-bottom:1px solid var(--line);
+  }
+  nav .wrap{display:flex; align-items:center; justify-content:space-between; height:72px;}
+  .logo{
+    font-family:'Fraunces', serif;
+    font-weight:600;
+    font-size:22px;
+    letter-spacing:-0.01em;
+    display:flex; align-items:center; gap:8px;
+  }
+  .logo .dot{width:9px; height:9px; border-radius:50%; background:var(--signal); display:inline-block;}
+  .nav-links{display:flex; gap:32px; align-items:center;}
+  .nav-links a{color:var(--ink-soft); text-decoration:none; font-size:14px; font-weight:500;}
+  .nav-links a:hover{color:var(--ink);}
+  .btn{
+    font-family:'Inter', sans-serif;
+    font-weight:600;
+    font-size:14px;
+    padding:10px 20px;
+    border-radius:4px;
+    border:1.5px solid var(--ink);
+    background:transparent;
+    color:var(--ink);
+    cursor:pointer;
+    transition:all .15s ease;
+  }
+  .btn:hover{background:var(--ink); color:var(--paper);}
+  .btn-solid{
+    background:var(--signal);
+    border-color:var(--signal);
+    color:#fff;
+  }
+  .btn-solid:hover{background:#e8481f; border-color:#e8481f; color:#fff;}
+  .btn:focus-visible, a:focus-visible, input:focus-visible{
+    outline:2px solid var(--signal); outline-offset:2px;
+  }
+
+  /* ---------- HERO ---------- */
+  header.hero{padding:90px 0 70px;}
+  .eyebrow{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:12px;
+    letter-spacing:0.08em;
+    text-transform:uppercase;
+    color:var(--signal);
+    margin-bottom:18px;
+    display:flex; align-items:center; gap:10px;
+  }
+  .eyebrow::before{content:''; width:22px; height:1.5px; background:var(--signal); display:inline-block;}
+  h1{
+    font-family:'Fraunces', serif;
+    font-weight:600;
+    font-size:clamp(38px, 5.5vw, 64px);
+    line-height:1.04;
+    letter-spacing:-0.02em;
+    max-width:16ch;
+    margin-bottom:24px;
+  }
+  h1 em{font-style:italic; color:var(--signal);}
+  .sub{
+    font-size:18px;
+    color:var(--ink-soft);
+    max-width:46ch;
+    margin-bottom:36px;
+  }
+  .hero-ctas{display:flex; gap:14px; align-items:center; margin-bottom:16px;}
+  .hero-note{font-size:13px; color:var(--ink-soft); font-family:'IBM Plex Mono', monospace;}
+
+  /* ---------- SIGNATURE DIAGRAM ---------- */
+  .signature{
+    margin-top:64px;
+    padding:36px 0 10px;
+  }
+  .diagram{width:100%; height:auto; display:block;}
+  .diagram .src-card{
+    fill:var(--paper); stroke:var(--ink); stroke-width:1.5;
+  }
+  .diagram .src-label{
+    font-family:'IBM Plex Mono', monospace; font-size:11px; fill:var(--ink-soft);
+  }
+  .diagram .src-title{
+    font-family:'Fraunces', serif; font-size:15px; fill:var(--ink); font-weight:600;
+  }
+  .diagram .branch-line{
+    fill:none; stroke:var(--ink); stroke-width:1.2;
+    stroke-dasharray:400;
+    stroke-dashoffset:400;
+    animation:draw 1.4s ease forwards;
+  }
+  .diagram .branch-line.d1{animation-delay:.15s;}
+  .diagram .branch-line.d2{animation-delay:.3s;}
+  .diagram .branch-line.d3{animation-delay:.45s;}
+  .diagram .branch-line.d4{animation-delay:.6s;}
+  @keyframes draw{to{stroke-dashoffset:0;}}
+  .diagram .out-card{
+    fill:#fff; stroke:var(--line); stroke-width:1.2;
+    opacity:0;
+    animation:pop .5s ease forwards;
+  }
+  .diagram .out-card.n1{animation-delay:.9s;}
+  .diagram .out-card.n2{animation-delay:1.05s;}
+  .diagram .out-card.n3{animation-delay:1.2s;}
+  .diagram .out-card.n4{animation-delay:1.35s;}
+  @keyframes pop{from{opacity:0; transform:translateX(-6px);} to{opacity:1; transform:translateX(0);}}
+  .diagram .out-label{font-family:'IBM Plex Mono', monospace; font-size:10.5px; fill:var(--ink-soft); letter-spacing:.03em;}
+  .diagram .out-title{font-family:'Inter', sans-serif; font-size:13px; fill:var(--ink); font-weight:600;}
+  .diagram .node-dot{fill:var(--signal);}
+
+  /* ---------- SECTION SHARED ---------- */
+  section{padding:88px 0;}
+  section.alt{background:#fff; border-top:1px solid var(--line); border-bottom:1px solid var(--line);}
+  .section-head{max-width:56ch; margin-bottom:56px;}
+  .section-eyebrow{
+    font-family:'IBM Plex Mono', monospace; font-size:12px; letter-spacing:.08em; text-transform:uppercase;
+    color:var(--ink-soft); margin-bottom:14px;
+  }
+  h2{
+    font-family:'Fraunces', serif; font-weight:600;
+    font-size:clamp(28px, 3.6vw, 40px);
+    letter-spacing:-0.01em;
+    line-height:1.12;
+  }
+  .section-body{color:var(--ink-soft); margin-top:14px; font-size:16px; max-width:52ch;}
+
+  /* ---------- HOW IT WORKS ---------- */
+  .steps{display:grid; grid-template-columns:repeat(3,1fr); gap:36px;}
+  .step{border-top:2px solid var(--ink); padding-top:18px;}
+  .step .num{
+    font-family:'IBM Plex Mono', monospace; font-size:13px; color:var(--signal); margin-bottom:12px; display:block;
+  }
+  .step h3{font-family:'Fraunces', serif; font-size:20px; font-weight:600; margin-bottom:10px;}
+  .step p{color:var(--ink-soft); font-size:15px;}
+
+  /* ---------- FEATURES ---------- */
+  .feat-grid{display:grid; grid-template-columns:repeat(2,1fr); gap:1px; background:var(--line); border:1px solid var(--line);}
+  .feat{background:var(--paper); padding:32px;}
+  .feat h3{font-family:'Fraunces', serif; font-size:19px; font-weight:600; margin-bottom:10px;}
+  .feat p{color:var(--ink-soft); font-size:14.5px;}
+  .feat .tag{
+    font-family:'IBM Plex Mono', monospace; font-size:11px; color:var(--mint-ink, #1a7a52);
+    background:#3ddc9722; padding:3px 8px; border-radius:3px; display:inline-block; margin-bottom:14px;
+  }
+
+  /* ---------- PRICING ---------- */
+  .pricing-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:24px;}
+  .price-card{
+    background:#fff; border:1.5px solid var(--line); border-radius:8px; padding:32px 28px;
+    display:flex; flex-direction:column;
+  }
+  .price-card.featured{
+    border-color:var(--ink); box-shadow:0 4px 0 var(--ink);
+    position:relative;
+  }
+  .price-card.featured .badge{
+    position:absolute; top:-13px; left:28px;
+    background:var(--signal); color:#fff; font-family:'IBM Plex Mono', monospace;
+    font-size:11px; padding:4px 10px; border-radius:3px; letter-spacing:.04em;
+  }
+  .plan-name{font-family:'Fraunces', serif; font-size:20px; font-weight:600; margin-bottom:6px;}
+  .plan-desc{color:var(--ink-soft); font-size:13.5px; margin-bottom:20px; min-height:34px;}
+  .plan-price{font-family:'Fraunces', serif; font-size:38px; font-weight:600; margin-bottom:2px;}
+  .plan-price span{font-family:'Inter', sans-serif; font-size:14px; color:var(--ink-soft); font-weight:400;}
+  .plan-list{list-style:none; margin:22px 0 26px; flex-grow:1;}
+  .plan-list li{
+    font-size:14px; color:var(--ink-soft); padding:8px 0; border-top:1px solid var(--paper-dim);
+    display:flex; gap:10px; align-items:baseline;
+  }
+  .plan-list li::before{content:'—'; color:var(--signal); flex-shrink:0;}
+  .plan-cta{width:100%; text-align:center;}
+
+  /* ---------- SIGNUP / FOOTER CTA ---------- */
+  .cta-band{
+    background:var(--ink); color:var(--paper); border-radius:10px; padding:56px 48px;
+    display:flex; justify-content:space-between; align-items:center; gap:40px; flex-wrap:wrap;
+  }
+  .cta-band h2{color:var(--paper);}
+  .cta-band p{color:#a9b3b3; margin-top:10px; max-width:40ch;}
+  .cta-form{display:flex; gap:10px; flex-wrap:wrap;}
+  .cta-form input[type=email]{
+    background:#1e2630; border:1.5px solid #333d47; color:#fff;
+    padding:12px 14px; border-radius:4px; font-family:'Inter'; font-size:14px; min-width:240px;
+  }
+  .cta-form input[type=email]::placeholder{color:#7a8590;}
+  .cta-form .btn-solid{border-radius:4px;}
+
+  footer{padding:40px 0 60px;}
+  footer .wrap{display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px;}
+  footer .foot-note{color:var(--ink-soft); font-size:13px; font-family:'IBM Plex Mono', monospace;}
+
+  /* ---------- MODAL (mock checkout) ---------- */
+  .modal-overlay{
+    position:fixed; inset:0; background:rgba(18,24,31,.55);
+    display:none; align-items:center; justify-content:center; z-index:100; padding:20px;
+  }
+  .modal-overlay.open{display:flex;}
+  .modal{
+    background:#fff; border-radius:10px; max-width:420px; width:100%; padding:32px;
+    animation:modal-in .2s ease;
+  }
+  @keyframes modal-in{from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:translateY(0);}}
+  .modal h3{font-family:'Fraunces', serif; font-size:22px; margin-bottom:6px;}
+  .modal .modal-sub{color:var(--ink-soft); font-size:14px; margin-bottom:22px;}
+  .modal label{font-size:12px; font-family:'IBM Plex Mono', monospace; color:var(--ink-soft); display:block; margin-bottom:6px; margin-top:14px;}
+  .modal input{
+    width:100%; padding:11px 12px; border:1.5px solid var(--line); border-radius:4px; font-family:'Inter'; font-size:14px;
+  }
+  .modal-row{display:flex; gap:12px;}
+  .modal-row > div{flex:1;}
+  .modal-actions{margin-top:26px; display:flex; gap:10px;}
+  .modal-actions .btn{flex:1;}
+  .modal-foot{font-size:12px; color:var(--ink-soft); margin-top:16px; text-align:center;}
+  .close-x{position:absolute; top:18px; right:18px; background:none; border:none; font-size:20px; cursor:pointer; color:var(--ink-soft);}
+  .modal{position:relative;}
+  .success-tick{
+    width:44px; height:44px; border-radius:50%; background:var(--mint); color:#fff;
+    display:flex; align-items:center; justify-content:center; font-size:22px; margin-bottom:16px;
+  }
+
+  @media (max-width:760px){
+    .steps{grid-template-columns:1fr;}
+    .feat-grid{grid-template-columns:1fr;}
+    .pricing-grid{grid-template-columns:1fr;}
+    .nav-links{display:none;}
+    .cta-band{padding:36px 24px;}
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap">
+    <div class="logo"><span class="dot"></span>Reloop</div>
+    <div class="nav-links">
+      <a href="#how">How it works</a>
+      <a href="#features">Features</a>
+      <a href="#pricing">Pricing</a>
+    </div>
+    <button class="btn" onclick="openModal('Starter')">Sign in</button>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="eyebrow">One input, every channel</div>
+    <h1>Write it once.<br>Send it <em>everywhere</em>.</h1>
+    <p class="sub">Reloop turns one blog post, podcast, or video into a week of social posts, a newsletter, and short clips — in your voice, ready before your coffee's cold.</p>
+    <div class="hero-ctas">
+      <button class="btn btn-solid" onclick="openModal('Studio')">Start free for 14 days</button>
+      <a href="#how" class="btn" style="text-decoration:none; display:inline-flex; align-items:center;">See how it works</a>
+    </div>
+    <div class="hero-note">No card required to start · cancel anytime</div>
+
+    <div class="signature">
+      <svg class="diagram" viewBox="0 0 1000 260" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="One source piece of content branching into four output formats: social thread, newsletter, short clip, and quote card">
+        <!-- source card -->
+        <rect class="src-card" x="20" y="95" width="200" height="72" rx="4"/>
+        <circle class="node-dot" cx="42" cy="118" r="4"/>
+        <text class="src-label" x="56" y="122">SOURCE</text>
+        <text class="src-title" x="40" y="148">Your blog post</text>
+
+        <!-- branch lines -->
+        <path class="branch-line d1" d="M220,110 C 400,110 400,40 560,40"/>
+        <path class="branch-line d2" d="M220,125 C 400,125 400,95 560,95"/>
+        <path class="branch-line d3" d="M220,140 C 400,140 400,165 560,165"/>
+        <path class="branch-line d4" d="M220,155 C 400,155 400,220 560,220"/>
+
+        <!-- output cards -->
+        <rect class="out-card n1" x="560" y="14" width="230" height="54" rx="4"/>
+        <text class="out-label n1" x="576" y="34">SOCIAL THREAD</text>
+        <text class="out-title n1" x="576" y="54">6-post breakdown</text>
+
+        <rect class="out-card n2" x="560" y="69" width="230" height="54" rx="4"/>
+        <text class="out-label n2" x="576" y="89">NEWSLETTER</text>
+        <text class="out-title n2" x="576" y="109">Weekly digest section</text>
+
+        <rect class="out-card n3" x="560" y="139" width="230" height="54" rx="4"/>
+        <text class="out-label n3" x="576" y="159">SHORT CLIP SCRIPT</text>
+        <text class="out-title n3" x="576" y="179">45-sec talking points</text>
+
+        <rect class="out-card n4" x="560" y="194" width="230" height="54" rx="4"/>
+        <text class="out-label n4" x="576" y="214">QUOTE CARD</text>
+        <text class="out-title n4" x="576" y="234">Shareable pull-quote</text>
+      </svg>
+    </div>
+  </div>
+</header>
+
+<section id="how" class="alt">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="section-eyebrow">Process</div>
+      <h2>Three steps, once a week</h2>
+    </div>
+    <div class="steps">
+      <div class="step">
+        <span class="num">01</span>
+        <h3>Drop in your source</h3>
+        <p>Paste a link, upload a transcript, or forward the newsletter you already wrote. Reloop reads it once.</p>
+      </div>
+      <div class="step">
+        <span class="num">02</span>
+        <h3>Reloop rewrites, not recycles</h3>
+        <p>Every format is written fresh for its platform and matched to your existing voice — not a copy-pasted summary.</p>
+      </div>
+      <div class="step">
+        <span class="num">03</span>
+        <h3>Review, tweak, send</h3>
+        <p>Everything lands in one queue. Edit anything, schedule what's ready, skip what isn't.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="features">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="section-eyebrow">Built for</div>
+      <h2>Everything after you hit publish</h2>
+      <p class="section-body">The writing was never the hard part. Turning it into five more things without spending your whole afternoon on it — that's what Reloop does.</p>
+    </div>
+    <div class="feat-grid">
+      <div class="feat">
+        <span class="tag">VOICE MATCH</span>
+        <h3>Sounds like you, not a template</h3>
+        <p>Reloop learns your phrasing from your past posts, so outputs don't read like generic AI copy.</p>
+      </div>
+      <div class="feat">
+        <span class="tag">QUEUE</span>
+        <h3>One place for everything pending</h3>
+        <p>Every repurposed piece lands in a single review queue, sorted by channel and ready time.</p>
+      </div>
+      <div class="feat">
+        <span class="tag">SCHEDULING</span>
+        <h3>Send when your audience is around</h3>
+        <p>Set posting windows per channel once — Reloop times future sends to match automatically.</p>
+      </div>
+      <div class="feat">
+        <span class="tag">HISTORY</span>
+        <h3>Nothing repeats without you noticing</h3>
+        <p>A running log of everything sent, so you're never guessing whether you covered this angle already.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="pricing" class="alt">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="section-eyebrow">Pricing</div>
+      <h2>Pick a plan, cancel whenever</h2>
+    </div>
+    <div class="pricing-grid">
+      <div class="price-card">
+        <div class="plan-name">Starter</div>
+        <div class="plan-desc">For one creator posting to a couple of channels.</div>
+        <div class="plan-price">$19<span>/month</span></div>
+        <ul class="plan-list">
+          <li>1 source input per week</li>
+          <li>3 output formats</li>
+          <li>Voice match (basic)</li>
+          <li>Email support</li>
+        </ul>
+        <button class="btn plan-cta" onclick="openModal('Starter')">Start free trial</button>
+      </div>
+      <div class="price-card featured">
+        <div class="badge">MOST POPULAR</div>
+        <div class="plan-name">Studio</div>
+        <div class="plan-desc">For creators and small teams publishing weekly.</div>
+        <div class="plan-price">$49<span>/month</span></div>
+        <ul class="plan-list">
+          <li>5 source inputs per week</li>
+          <li>All output formats</li>
+          <li>Voice match (trained on your archive)</li>
+          <li>Scheduling &amp; queue</li>
+          <li>Priority support</li>
+        </ul>
+        <button class="btn btn-solid plan-cta" onclick="openModal('Studio')">Start free trial</button>
+      </div>
+      <div class="price-card">
+        <div class="plan-name">Agency</div>
+        <div class="plan-desc">For teams repurposing content across clients.</div>
+        <div class="plan-price">$149<span>/month</span></div>
+        <ul class="plan-list">
+          <li>Unlimited source inputs</li>
+          <li>All output formats</li>
+          <li>Multiple voice profiles</li>
+          <li>Client workspaces</li>
+          <li>Dedicated support</li>
+        </ul>
+        <button class="btn plan-cta" onclick="openModal('Agency')">Start free trial</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="cta-band">
+      <div>
+        <h2>Get one repurposed set, free</h2>
+        <p>Drop your email and we'll send you a sample thread, newsletter blurb, and clip script from any post you like.</p>
+      </div>
+      <form class="cta-form" onsubmit="return handleSignup(event)">
+        <input type="email" id="signup-email" placeholder="you@yourwork.com" required>
+        <button type="submit" class="btn btn-solid">Get my sample</button>
+      </form>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="logo" style="font-size:16px;"><span class="dot"></span>Reloop</div>
+    <div class="foot-note">© 2026 Reloop · one piece in, everything out</div>
+  </div>
+</footer>
+
+<!-- Mock checkout modal -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal" id="modal-content">
+    <!-- content injected by JS -->
+  </div>
+</div>
+
+<script src="https://js.stripe.com/v3/"></script>
+<script>
+  // Your Stripe publishable key — safe to expose in frontend code.
+  const stripe = Stripe('pk_test_51TsqepACjsitVEdYtmcgFu7bEq1f2TSZStBjqWEvV081lI7id605uj8VnSuW2QjX8RUwP7tkpcOg9bQo0a988GrN00gRxIDuSz');
+
+  const plans = {
+    Starter: {price:'$19/month', desc:'1 source input/week · 3 formats'},
+    Studio: {price:'$49/month', desc:'5 source inputs/week · all formats'},
+    Agency: {price:'$149/month', desc:'Unlimited inputs · client workspaces'}
+  };
+
+  function openModal(planName){
+    const p = plans[planName] || plans.Studio;
+    const overlay = document.getElementById('modal-overlay');
+    const content = document.getElementById('modal-content');
+    content.innerHTML = `
+      <button class="close-x" onclick="closeModal()" aria-label="Close">×</button>
+      <h3>Start your ${planName} trial</h3>
+      <div class="modal-sub">${p.desc} · ${p.price} after 14 days · cancel anytime</div>
+      <div class="modal-actions">
+        <button type="button" class="btn" onclick="closeModal()">Cancel</button>
+        <button type="button" class="btn btn-solid" id="stripe-go-btn">Continue to secure checkout</button>
+      </div>
+      <div class="modal-foot" id="modal-status">You'll enter payment details on Stripe's secure checkout page.</div>
+    `;
+    overlay.classList.add('open');
+    document.getElementById('stripe-go-btn').onclick = () => startCheckout(planName);
+  }
+
+  async function startCheckout(planName){
+    const statusEl = document.getElementById('modal-status');
+    const btn = document.getElementById('stripe-go-btn');
+    btn.disabled = true;
+    btn.textContent = 'Redirecting…';
+    try {
+      const res = await fetch('/api/create-checkout-session', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ plan: planName })
+      });
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        throw new Error(data.error || 'Checkout could not be created');
+      }
+    } catch (err) {
+      statusEl.textContent = 'Something went wrong — please try again in a moment.';
+      btn.disabled = false;
+      btn.textContent = 'Continue to secure checkout';
+      console.error(err);
+    }
+  }
+
+  function closeModal(){
+    document.getElementById('modal-overlay').classList.remove('open');
+  }
+
+  function handleSignup(e){
+    e.preventDefault();
+    const email = document.getElementById('signup-email');
+    const btn = e.target.querySelector('button');
+    const original = btn.textContent;
+    btn.textContent = 'Sent — check your inbox';
+    btn.disabled = true;
+    setTimeout(()=>{ btn.textContent = original; btn.disabled = false; email.value=''; }, 3000);
+    return false;
+  }
+
+  document.getElementById('modal-overlay').addEventListener('click', (e)=>{
+    if(e.target.id === 'modal-overlay') closeModal();
+  });
+</script>
+
+</body>
+</html>
