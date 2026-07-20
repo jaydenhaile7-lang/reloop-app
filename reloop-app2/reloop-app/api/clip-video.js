@@ -27,9 +27,9 @@ module.exports = async (req, res) => {
     return res.status(401).json({ error: 'Not logged in.' });
   }
 
-  const { videoUrl, mode, focus } = req.body || {};
-  if (!videoUrl || !videoUrl.trim()) {
-    return res.status(400).json({ error: 'Paste a video link first.' });
+  const { videoUrl, uploadId, mode, focus } = req.body || {};
+  if ((!videoUrl || !videoUrl.trim()) && !uploadId) {
+    return res.status(400).json({ error: 'Paste a video link or upload a file first.' });
   }
 
   const MODE_PROMPTS = {
@@ -54,6 +54,10 @@ module.exports = async (req, res) => {
     ? `${basePrompt} Additionally: ${focus.trim()}.`
     : basePrompt;
 
+  const sourceFields = uploadId
+    ? { uploadId }
+    : { sourceUrl: videoUrl.trim() };
+
   try {
     const reapRes = await fetch('https://public.reap.video/api/v1/automation/create-clips', {
       method: 'POST',
@@ -62,7 +66,7 @@ module.exports = async (req, res) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        sourceUrl: videoUrl.trim(),
+        ...sourceFields,
         genre: 'talking',
         reframeClips: true,
         exportOrientation: 'portrait',
