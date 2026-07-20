@@ -72,7 +72,25 @@ a{color:var(--signal); font-weight:600; text-decoration:none;}
 <p class="sub">Paste a YouTube link or other public video link. Reloop will find the strongest moments and turn them into captioned, vertical clips ready for TikTok, Reels, and Shorts.</p>
 <input type="text" id="video-url" class="video-input" placeholder="https://youtube.com/watch?v=…">
 <br>
-<input type="text" id="video-focus" class="video-input" placeholder="What should Reloop focus on? (optional — e.g. \"the actual workout tips\")" style="margin-top:10px;">
+<select id="video-mode" class="video-input" style="margin-top:10px;">
+<option value="">What kind of content is this? (let AI decide)</option>
+<option value="tips">Tips & advice (how-to, coaching, workouts, guides)</option>
+<option value="educational">Educational (explanations, lessons, frameworks)</option>
+<option value="storytelling">Storytelling (personal stories, case studies)</option>
+<option value="qa">Q&A / interview</option>
+<option value="quotes">Quotes (punchy one-liners, soundbites)</option>
+<option value="hooks">Hooks only (attention-grabbing openers)</option>
+<option value="stats">Stats & facts</option>
+<option value="listicle">Listicle (numbered points, steps, reasons)</option>
+<option value="reactions">Reaction moments (surprise, laughter, shock)</option>
+<option value="controversy">Controversial / debate-worthy moments</option>
+<option value="highlight">Highlight reel (overall best moments)</option>
+<option value="trailer">Trailer (teaser, hook without spoiling)</option>
+<option value="compilation">Compilation (similar moments grouped)</option>
+<option value="topic">Single topic deep-dive</option>
+</select>
+<br>
+<input type="text" id="video-focus" class="video-input" placeholder="Anything specific to focus on or skip? (optional)" style="margin-top:10px;">
 <br>
 <button id="clip-btn">Clip this video</button>
 <div class="msg" id="video-error-msg"></div>
@@ -233,6 +251,7 @@ poll();
 
 document.getElementById('clip-btn').addEventListener('click', async () => {
 const videoUrl = document.getElementById('video-url').value.trim();
+const mode = document.getElementById('video-mode').value;
 const focus = document.getElementById('video-focus').value.trim();
 const errorMsg = document.getElementById('video-error-msg');
 const statusMsg = document.getElementById('video-status-msg');
@@ -257,7 +276,7 @@ headers: {
 'Content-Type': 'application/json',
 'Authorization': `Bearer ${session.access_token}`
 },
-body: JSON.stringify({ videoUrl, focus })
+body: JSON.stringify({ videoUrl, mode, focus })
 });
 const data = await res.json();
 if (!res.ok) throw new Error(data.error || 'Something went wrong.');
