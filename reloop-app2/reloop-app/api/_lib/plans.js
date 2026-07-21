@@ -43,6 +43,16 @@ const PLAN_RULES = {
   },
 };
 
+// Admins bypass all subscription, tier, and usage checks — full access always,
+// independent of billing (so a lapsed Stripe subscription can't lock an owner
+// out). Grant by setting subscribers.is_admin = true.
+const ADMIN_RULES = {
+  label: 'Admin',
+  formats: ALL_FORMATS.map((f) => f.key),
+  video: true,
+  weeklyInputs: null, // unlimited
+};
+
 // The rolling window used for "inputs per week". A rolling 7-day window (rather
 // than a fixed calendar week) avoids timezone edge cases and burst-at-midnight
 // gaming. Change here if the product ever wants a fixed weekly reset.
@@ -69,7 +79,7 @@ async function getSubscriber(email) {
   try {
     const url = `${SB_URL()}/rest/v1/subscribers?email=eq.${encodeURIComponent(
       email
-    )}&select=status,plan&limit=1`;
+    )}&select=status,plan,is_admin&limit=1`;
     const res = await fetch(url, { headers: SB_HEADERS() });
     if (!res.ok) return null;
     const rows = await res.json();
@@ -127,6 +137,12 @@ async function recordUsage(email, kind) {
 //   need: 'repurpose' | 'clip'
 async function authorizeAction(email, need) {
   const subscriber = await getSubscriber(email);
+
+  // Admin bypass: unlimited full access regardless of status, plan, or usage.
+  if (subscriber && subscriber.is_admin) {
+    return { ok: true, subscriber, rules: ADMIN_RULES, usage: { used: 0, limit: null } };
+  }
+
   if (!subscriber || subscriber.status !== 'active') {
     return {
       ok: false,
@@ -175,6 +191,7 @@ async function authorizeAction(email, need) {
 module.exports = {
   ALL_FORMATS,
   PLAN_RULES,
+  ADMIN_RULES,
   rulesFor,
   getSubscriber,
   countRecentUsage,

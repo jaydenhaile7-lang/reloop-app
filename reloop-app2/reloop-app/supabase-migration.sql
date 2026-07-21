@@ -6,6 +6,11 @@
 alter table public.subscribers
   add column if not exists plan text;
 
+-- 1b. Admin flag. Admins bypass all subscription/tier/usage checks — full access
+--     always, independent of billing. See the grant example at the bottom.
+alter table public.subscribers
+  add column if not exists is_admin boolean not null default false;
+
 -- 2. IMPORTANT backfill: existing active subscribers have plan = NULL, which the
 --    new backend check treats as "unrecognized plan" and blocks. Set them to the
 --    tier they actually pay for. If you can't tell them apart, pick the most
@@ -32,3 +37,9 @@ create index if not exists usage_events_email_created_idx
 --    public anon key cannot read/write these tables directly from the browser.
 alter table public.subscribers  enable row level security;
 alter table public.usage_events enable row level security;
+
+-- 5. Grant yourself admin (full access, always). Replace the email with yours.
+--    Safe to run after logging in once, or before — the row is created either way.
+-- insert into public.subscribers (email, status, plan, is_admin)
+-- values ('you@example.com', 'active', 'Agency', true)
+-- on conflict (email) do update set is_admin = true, status = 'active', plan = 'Agency';
