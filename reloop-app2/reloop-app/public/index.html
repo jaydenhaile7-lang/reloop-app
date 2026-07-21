@@ -68,6 +68,12 @@
     color:#fff;
   }
   .btn-solid:hover{background:#e8481f; border-color:#e8481f; color:#fff;}
+  .nav-cta{display:flex; align-items:center; gap:12px;}
+  .btn-link{
+    display:inline-flex; align-items:center; text-decoration:none;
+    border-color:transparent; background:transparent; color:var(--ink);
+  }
+  .btn-link:hover{background:var(--ink); color:var(--paper);}
   .btn:focus-visible, a:focus-visible, input:focus-visible{
     outline:2px solid var(--signal); outline-offset:2px;
   }
@@ -272,7 +278,10 @@
       <a href="#features">Features</a>
       <a href="#pricing">Pricing</a>
     </div>
-    <button class="btn" onclick="openModal('Starter')">Sign in</button>
+    <div class="nav-cta">
+      <a href="/login.html" class="btn btn-link">Log in</a>
+      <button class="btn btn-solid" onclick="openModal('Studio')">Start free trial</button>
+    </div>
   </div>
 </nav>
 

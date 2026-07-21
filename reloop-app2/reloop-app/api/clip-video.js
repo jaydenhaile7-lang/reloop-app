@@ -1,7 +1,11 @@
 // Vercel serverless function — starts a Reap video-clipping job for a
-// pasted YouTube link (or other public video URL). Requires the user to
-// be logged in via Supabase, same pattern as repurpose.js.
-// Requires SUPABASE_URL, SUPABASE_ANON_KEY, and REAP_API_KEY env vars.
+// pasted YouTube link (or other public video URL). Requires the user to be
+// logged in via Supabase AND on a tier that includes video clipping (Studio+),
+// with weekly-input quota remaining. Same enforcement pattern as repurpose.js.
+// Requires SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_KEY, and
+// REAP_API_KEY env vars.
+
+const { authorizeAction, recordUsage } = require('./_lib/plans');
 
 async function verifySupabaseUser(accessToken) {
   const res = await fetch(`${process.env.SUPABASE_URL}/auth/v1/user`, {
@@ -23,8 +27,15 @@ module.exports = async (req, res) => {
   const authHeader = req.headers.authorization || '';
   const token = authHeader.replace('Bearer ', '');
   const user = await verifySupabaseUser(token);
-  if (!user) {
+  if (!user || !user.email) {
     return res.status(401).json({ error: 'Not logged in.' });
+  }
+
+  // Subscription + video-permission + weekly-limit enforcement (backend-first).
+  // authorizeAction rejects tiers without video (Starter) and quota-exhausted users.
+  const auth = await authorizeAction(user.email, 'clip');
+  if (!auth.ok) {
+    return res.status(auth.status).json({ error: auth.error, upgrade: auth.upgrade });
   }
 
   const { videoUrl, uploadId, mode, focus } = req.body || {};
@@ -85,6 +96,8 @@ module.exports = async (req, res) => {
     }
 
     const data = await reapRes.json();
+    // Count this clip job against the weekly limit (after a successful start).
+    await recordUsage(user.email, 'clip');
     return res.status(200).json({ projectId: data.id, status: data.status });
   } catch (err) {
     console.error('clip-video error:', err);

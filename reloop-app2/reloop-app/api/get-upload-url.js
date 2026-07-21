@@ -1,7 +1,10 @@
 // Vercel serverless function — requests a presigned upload URL from Reap
 // so the browser can upload a video file directly (not through our own
 // server, which avoids Vercel's function payload/size limits).
-// Requires SUPABASE_URL, SUPABASE_ANON_KEY, and REAP_API_KEY env vars.
+// Requires SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_KEY, and
+// REAP_API_KEY env vars.
+
+const { authorizeAction } = require('./_lib/plans');
 
 async function verifySupabaseUser(accessToken) {
   const res = await fetch(`${process.env.SUPABASE_URL}/auth/v1/user`, {
@@ -23,8 +26,15 @@ module.exports = async (req, res) => {
   const authHeader = req.headers.authorization || '';
   const token = authHeader.replace('Bearer ', '');
   const user = await verifySupabaseUser(token);
-  if (!user) {
+  if (!user || !user.email) {
     return res.status(401).json({ error: 'Not logged in.' });
+  }
+
+  // Same gate as clip-video: only video-enabled tiers with quota can upload.
+  // (Checks eligibility; the usage count is recorded later, in clip-video.js.)
+  const auth = await authorizeAction(user.email, 'clip');
+  if (!auth.ok) {
+    return res.status(auth.status).json({ error: auth.error, upgrade: auth.upgrade });
   }
 
   const { filename } = req.body || {};
