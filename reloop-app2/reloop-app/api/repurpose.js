@@ -8,11 +8,43 @@ const { authorizeAction, recordUsage, ALL_FORMATS } = require('./_lib/plans');
 
 // How each format is described to the model, keyed by the same keys used in
 // _lib/plans.js. Adding a new format = add it here and to ALL_FORMATS.
+//
+// These specs are the product. They're written to produce platform-native
+// output rather than a summary of the source — in particular the clip spec is
+// built around the fact that short-form retention is won or lost in the first
+// three seconds, so it demands an engineered hook, first-frame on-screen text,
+// and cut-level pacing instead of a block of prose to read aloud.
 const FORMAT_SPECS = {
-  thread: 'A 6-post social media thread breaking down the key ideas.',
-  newsletter: 'A short section (150-200 words) suitable for a newsletter digest.',
-  clip: 'A 45-second short-form video talking-point script.',
-  quote: 'One short, shareable pull-quote from the content.',
+  thread: `A social media thread that breaks down the key ideas.
+- Open with a standalone hook post that makes someone stop scrolling. No "a thread 🧵", no throat-clearing.
+- 5 to 7 posts total; use however many the material actually justifies, not a fixed count.
+- Every post must make sense on its own if it's the only one someone sees.
+- One idea per post. Short lines. No filler transitions like "and here's the thing".
+- Land the final post on a concrete takeaway, not a summary of what you just said.`,
+
+  newsletter: `A section (150-200 words) that slots into a newsletter digest.
+- Assume the reader never saw the source. Don't reference "the post" or "the video".
+- Lead with the sharpest idea, not background.
+- Written to be read in a quiet inbox, not shouted — but never padded.`,
+
+  clip: `A short-form video script (~45 seconds spoken) built to retain attention. Use exactly these four labelled sections, each on its own line:
+
+HOOKS (3 options)
+Three alternative opening lines, each of which lands its promise inside the first 3 seconds. No warm-up sentence, no "in this video", no restating the topic before the payoff. Vary the angle across the three: one curiosity/tension, one problem-then-fix, one blunt claim or result. Each under 15 words.
+
+ON-SCREEN TEXT
+3 to 7 words to burn onto the very first frame, in the viewer's language, high contrast. This is not the hook repeated verbatim — it's the promise compressed to its shortest readable form.
+
+SCRIPT
+The spoken script that follows the hook. Break it into short beats, one per line, each roughly 1-2 seconds of speech, so an editor knows exactly where to cut. Spoken rhythm, not written prose: short sentences, contractions, no subordinate clauses stacking up. Keep the payoff moving — never let more than a few seconds pass without something landing.
+
+CTA
+One short closing line telling the viewer exactly what to do next. Specific, not "follow for more".`,
+
+  quote: `One short, shareable pull-quote.
+- Must stand completely on its own with zero context.
+- Ideally under 15 words. Cut every word that isn't load-bearing.
+- Pull the sharpest line in the source, or sharpen it — don't invent a claim the source doesn't make.`,
 };
 
 const labelFor = (key) =>
@@ -39,7 +71,10 @@ async function callClaude(prompt) {
     },
     body: JSON.stringify({
       model: 'claude-sonnet-4-5',
-      max_tokens: 1500,
+      // Raised from 1500: the clip format alone now returns 3 hooks, on-screen
+      // text, a beat-broken script and a CTA, so all four formats together
+      // comfortably exceeded the old ceiling and got truncated mid-output.
+      max_tokens: 3000,
       messages: [{ role: 'user', content: prompt }],
     }),
   });
@@ -84,11 +119,28 @@ module.exports = async (req, res) => {
 
   try {
     const specLines = allowed
-      .map((k) => `[${k.toUpperCase()}]: ${FORMAT_SPECS[k]}`)
-      .join('\n');
+      .map((k) => `[${k.toUpperCase()}]\n${FORMAT_SPECS[k]}`)
+      .join('\n\n');
     const headerList = allowed.map((k) => `[${k.toUpperCase()}]`).join(', ');
 
-    const prompt = `You are Reloop, a content repurposing assistant. Given the source content below, produce the following, each clearly separated with these exact headers on their own line: ${headerList}
+    const prompt = `You are Reloop. You take one piece of content someone has already published and rebuild it into other formats — each one written natively for where it's going.
+
+VOICE
+Before writing anything, read the source closely for how this person writes: sentence length and rhythm, vocabulary, how blunt or formal they are, the phrasings they reach for, what they refuse to do. Write every output in that voice.
+- Match them. Do not upgrade them into marketing copy.
+- If the source is plain and direct, stay plain and direct. If it's funny, be funny in their way, not a generic way.
+- Never add hype, exclamation marks, or emoji that aren't already in their writing.
+- Their opinions are theirs — keep the edges. Don't sand a strong claim into something safe.
+
+RULES
+- Rebuild, don't summarize. Someone who never saw the source should get full value from each output on its own.
+- Never reference the source ("in this post", "the article above", "as mentioned").
+- No preamble and no sign-off. Give only the content itself.
+- Cut hedging: "maybe", "I think", "kind of" — unless the source genuinely hedges there.
+- Don't invent facts, numbers, or claims that aren't in the source.
+
+OUTPUT
+Produce the following, each separated by these exact headers on their own line: ${headerList}
 
 ${specLines}
 
