@@ -68,6 +68,12 @@
     color:#fff;
   }
   .btn-solid:hover{background:#e8481f; border-color:#e8481f; color:#fff;}
+  .nav-cta{display:flex; align-items:center; gap:12px;}
+  .btn-link{
+    display:inline-flex; align-items:center; text-decoration:none;
+    border-color:transparent; background:transparent; color:var(--ink);
+  }
+  .btn-link:hover{background:var(--ink); color:var(--paper);}
   .btn:focus-visible, a:focus-visible, input:focus-visible{
     outline:2px solid var(--signal); outline-offset:2px;
   }
@@ -219,6 +225,9 @@
   }
   .cta-form input[type=email]::placeholder{color:#7a8590;}
   .cta-form .btn-solid{border-radius:4px;}
+  .cta-status{flex-basis:100%; font-size:13px; color:#a9b3b3; min-height:18px;}
+  .cta-status.error{color:#ff8b6b;}
+  .cta-status.success{color:var(--mint);}
 
   footer{padding:40px 0 60px;}
   footer .wrap{display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px;}
@@ -272,7 +281,10 @@
       <a href="#features">Features</a>
       <a href="#pricing">Pricing</a>
     </div>
-    <button class="btn" onclick="openModal('Starter')">Sign in</button>
+    <div class="nav-cta">
+      <a href="/login.html" class="btn btn-link">Log in</a>
+      <button class="btn btn-solid" onclick="openModal('Studio')">Start free trial</button>
+    </div>
   </div>
 </nav>
 
@@ -435,11 +447,12 @@
     <div class="cta-band">
       <div>
         <h2>Get one repurposed set, free</h2>
-        <p>Drop your email and we'll send you a sample thread, newsletter blurb, and clip script from any post you like.</p>
+        <p>Drop your email and we'll be in touch to build you a free sample — a thread, newsletter blurb, and clip script from a post of your choice.</p>
       </div>
       <form class="cta-form" onsubmit="return handleSignup(event)">
         <input type="email" id="signup-email" placeholder="you@yourwork.com" required>
         <button type="submit" class="btn btn-solid">Get my sample</button>
+        <div class="cta-status" id="signup-status" role="status" aria-live="polite"></div>
       </form>
     </div>
   </div>
@@ -517,14 +530,39 @@
     document.getElementById('modal-overlay').classList.remove('open');
   }
 
-  function handleSignup(e){
+  async function handleSignup(e){
     e.preventDefault();
-    const email = document.getElementById('signup-email');
+    const input = document.getElementById('signup-email');
+    const status = document.getElementById('signup-status');
     const btn = e.target.querySelector('button');
     const original = btn.textContent;
-    btn.textContent = 'Sent — check your inbox';
+    const email = input.value.trim();
+
+    status.textContent = '';
+    status.className = 'cta-status';
     btn.disabled = true;
-    setTimeout(()=>{ btn.textContent = original; btn.disabled = false; email.value=''; }, 3000);
+    btn.textContent = 'Sending…';
+
+    try {
+      const res = await fetch('/api/subscribe-lead', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ email })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Something went wrong.');
+
+      // Captured — we follow up by hand to ask which post they want sampled.
+      status.textContent = "Thanks — we'll be in touch shortly to build your sample.";
+      status.className = 'cta-status success';
+      input.value = '';
+    } catch (err) {
+      status.textContent = err.message;
+      status.className = 'cta-status error';
+    }
+
+    btn.disabled = false;
+    btn.textContent = original;
     return false;
   }
 

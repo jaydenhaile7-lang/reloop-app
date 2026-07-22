@@ -39,6 +39,16 @@ a{color:var(--signal); font-weight:600; text-decoration:none;}
 .clip-card h4{margin:0 0 6px; font-size:15px;}
 .clip-card p{margin:0 0 10px; font-size:13.5px; color:var(--ink-soft);}
 .clip-card a.download{font-size:13.5px;}
+.plan-bar{display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; background:#fff; border:1.5px solid var(--line); border-radius:8px; padding:14px 18px; margin-bottom:28px;}
+.plan-bar .plan-name{font-family:'IBM Plex Mono',monospace; font-size:12px; text-transform:uppercase; letter-spacing:.05em; color:var(--ink); font-weight:600;}
+.plan-bar .plan-name b{color:var(--signal);}
+.plan-bar .usage{font-size:13px; color:var(--ink-soft);}
+.plan-bar .usage.exhausted{color:#c0392b;}
+.plan-bar a.upgrade{font-size:13px;}
+.upgrade-card{background:#fff; border:1.5px dashed var(--line); border-radius:8px; padding:28px; text-align:center; color:var(--ink-soft);}
+.upgrade-card h3{font-family:'Fraunces',serif; font-size:19px; color:var(--ink); margin:0 0 8px;}
+.upgrade-card p{margin:0 0 16px; font-size:14px;}
+.upgrade-card a{display:inline-block; background:var(--signal); color:#fff; padding:10px 20px; border-radius:4px; font-weight:600; font-size:14px;}
 </style>
 </head>
 <body>
@@ -57,22 +67,19 @@ a{color:var(--signal); font-weight:600; text-decoration:none;}
 </div>
 
 <div id="app" style="display:none;">
+<div id="plan-bar" class="plan-bar"></div>
 <h1>Paste in your content</h1>
-<p class="sub">A blog post, transcript, or anything you've published. Reloop will turn it into a social thread, a newsletter section, a clip script, and a quote card.</p>
+<p class="sub">A blog post, transcript, or anything you've published. Reloop turns it into ready-to-post formats — the ones included on your plan are listed above.</p>
 <textarea id="source-text" placeholder="Paste your content here…"></textarea>
 <br>
 <button id="repurpose-btn">Repurpose this</button>
 <div class="msg" id="error-msg"></div>
 
-<div class="results" id="results">
-<div class="result-block"><h3>Social Thread</h3><div id="out-thread"></div></div>
-<div class="result-block"><h3>Newsletter Section</h3><div id="out-newsletter"></div></div>
-<div class="result-block"><h3>Clip Script</h3><div id="out-clip"></div></div>
-<div class="result-block"><h3>Quote Card</h3><div id="out-quote"></div></div>
-</div>
+<div class="results" id="results"></div>
 
 <hr class="section-divider">
 
+<div id="clip-section">
 <h1>Clip a video</h1>
 <p class="sub">Paste a YouTube link or other public video link. Reloop will find the strongest moments and turn them into captioned, vertical clips ready for TikTok, Reels, and Shorts.</p>
 <div class="input-toggle">
@@ -85,6 +92,12 @@ a{color:var(--signal); font-weight:600; text-decoration:none;}
 <div id="file-input-wrap" style="display:none;">
 <input type="file" id="video-file" class="video-input" accept="video/mp4,video/quicktime">
 </div>
+<br>
+<select id="video-genre" class="video-input" style="margin-top:10px;">
+<option value="talking">Talking head / interview / podcast (most common)</option>
+<option value="screenshare">Screen share (tutorials, demos, walkthroughs)</option>
+<option value="gaming">Gaming</option>
+</select>
 <br>
 <select id="video-mode" class="video-input" style="margin-top:10px;">
 <option value="">What kind of content is this? (let AI decide)</option>
@@ -113,12 +126,48 @@ a{color:var(--signal); font-weight:600; text-decoration:none;}
 <div class="results" id="video-results"></div>
 </div>
 </div>
+</div>
 
 <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 <script>
 const SUPABASE_URL = 'https://zvyotxqmjrcysajeoujn.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp2eW90eHFtanJjeXNhamVvdWpuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQyMjQzMzAsImV4cCI6MjA5OTgwMDMzMH0.RX48gp9r69qko6IhLut7GAvy5QgWZG0ZTJzb4gC1EW0';
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// Tier entitlements for the logged-in user, filled in by init() from
+// /api/check-subscription. The backend is the real gate; this only drives
+// what the UI shows.
+let planRules = null;              // { label, formats:[keys], video, weeklyInputs }
+let currentUsage = { used: 0, limit: null };
+
+function renderPlanBar(){
+const bar = document.getElementById('plan-bar');
+if (!planRules) {
+bar.innerHTML = '<span class="plan-name">Plan not recognized</span><span class="usage">Contact support to sort out your subscription.</span>';
+return;
+}
+const limit = planRules.weeklyInputs; // null = unlimited
+let usageText, exhausted = false;
+if (limit === null) {
+usageText = 'Unlimited inputs this week';
+} else {
+const remaining = Math.max(0, limit - currentUsage.used);
+exhausted = remaining <= 0;
+usageText = `${remaining} of ${limit} input${limit === 1 ? '' : 's'} left this week`;
+}
+const upgradeLink = exhausted ? ' · <a class="upgrade" href="/index.html#pricing">Upgrade</a>' : '';
+bar.innerHTML =
+`<span class="plan-name"><b>${planRules.label}</b> plan</span>` +
+`<span class="usage ${exhausted ? 'exhausted' : ''}">${usageText}${upgradeLink}</span>`;
+}
+
+function clipUpgradeCard(){
+return '<div class="upgrade-card">' +
+'<h3>Video clipping is a Studio feature</h3>' +
+`<p>Your ${planRules ? planRules.label : 'current'} plan turns written content into text formats. ` +
+'Upgrade to Studio or Agency to turn videos into captioned vertical clips.</p>' +
+'<a href="/index.html#pricing">See plans</a></div>';
+}
 
 async function init(){
 const { data: { session } } = await supabaseClient.auth.getSession();
@@ -127,7 +176,7 @@ window.location.href = '/login.html';
 return;
 }
 
-// Ask our backend whether this email has an active subscription.
+// Ask our backend whether this email has an active subscription, and on which tier.
 const res = await fetch('/api/check-subscription', {
 method: 'POST',
 headers: {'Content-Type': 'application/json'},
@@ -136,11 +185,24 @@ body: JSON.stringify({ email: session.user.email })
 const data = await res.json();
 
 document.getElementById('loading').style.display = 'none';
-if (data.active) {
-document.getElementById('app').style.display = 'block';
-} else {
+if (!data.active) {
 document.getElementById('locked').style.display = 'block';
+return;
 }
+
+// Apply tier entitlements to the UI.
+planRules = data.rules || null;
+currentUsage = data.usage || { used: 0, limit: null };
+renderPlanBar();
+
+// Starter (or any tier without video) doesn't get the clip tool — swap it
+// for an upgrade prompt. The backend rejects the call regardless.
+if (!planRules || !planRules.video) {
+const sec = document.getElementById('clip-section');
+if (sec) sec.innerHTML = clipUpgradeCard();
+}
+
+document.getElementById('app').style.display = 'block';
 }
 
 document.getElementById('logout-link').addEventListener('click', async (e) => {
@@ -174,11 +236,24 @@ body: JSON.stringify({ text })
 const data = await res.json();
 if (!res.ok) throw new Error(data.error || 'Something went wrong.');
 
-document.getElementById('out-thread').textContent = data.thread;
-document.getElementById('out-newsletter').textContent = data.newsletter;
-document.getElementById('out-clip').textContent = data.clip;
-document.getElementById('out-quote').textContent = data.quote;
-document.getElementById('results').style.display = 'block';
+// Render only the formats the backend returned for this tier.
+const results = document.getElementById('results');
+results.innerHTML = '';
+(data.formats || []).forEach((f) => {
+const block = document.createElement('div');
+block.className = 'result-block';
+const h = document.createElement('h3');
+h.textContent = f.label;
+const body = document.createElement('div');
+body.textContent = f.text; // textContent — never inject model output as HTML
+block.appendChild(h);
+block.appendChild(body);
+results.appendChild(block);
+});
+results.style.display = 'block';
+
+// Keep the weekly-usage meter in sync with what the backend counted.
+if (data.usage) { currentUsage = data.usage; renderPlanBar(); }
 } catch (err) {
 errorMsg.textContent = err.message;
 }
@@ -288,6 +363,7 @@ const videoUrl = document.getElementById('video-url').value.trim();
 const fileInput = document.getElementById('video-file');
 const file = fileInput.files[0];
 const mode = document.getElementById('video-mode').value;
+const genre = document.getElementById('video-genre').value;
 const focus = document.getElementById('video-focus').value.trim();
 const errorMsg = document.getElementById('video-error-msg');
 const statusMsg = document.getElementById('video-status-msg');
@@ -344,10 +420,14 @@ headers: {
 'Content-Type': 'application/json',
 'Authorization': `Bearer ${session.access_token}`
 },
-body: JSON.stringify(usingFile ? { uploadId, mode, focus } : { videoUrl, mode, focus })
+body: JSON.stringify(usingFile ? { uploadId, mode, genre, focus } : { videoUrl, mode, genre, focus })
 });
 const data = await res.json();
 if (!res.ok) throw new Error(data.error || 'Something went wrong.');
+
+// A started clip job counts toward the weekly limit — reflect it immediately.
+currentUsage.used = (currentUsage.used || 0) + 1;
+renderPlanBar();
 
 btn.textContent = 'Working on it…';
 pollClipStatus(data.projectId);

@@ -9,9 +9,13 @@ const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 // Adds/updates a row in Supabase's "subscribers" table so the dashboard
 // knows who currently has an active plan. Requires SUPABASE_URL and
 // SUPABASE_SERVICE_KEY env vars.
-async function upsertSupabaseSubscriber(email, status) {
+async function upsertSupabaseSubscriber(email, status, plan) {
   if (!email) return;
   try {
+    // Only include `plan` when we actually know it, so a cancellation event
+    // (which doesn't carry a plan) doesn't overwrite the stored tier with null.
+    const row = { email, status };
+    if (plan) row.plan = plan;
     const res = await fetch(`${process.env.SUPABASE_URL}/rest/v1/subscribers`, {
       method: 'POST',
       headers: {
@@ -20,7 +24,7 @@ async function upsertSupabaseSubscriber(email, status) {
         'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_KEY}`,
         'Prefer': 'resolution=merge-duplicates',
       },
-      body: JSON.stringify({ email, status }),
+      body: JSON.stringify(row),
     });
     if (!res.ok) {
       const text = await res.text();
@@ -93,9 +97,10 @@ module.exports = async (req, res) => {
     case 'checkout.session.completed': {
       const session = event.data.object;
       const email = session.customer_details?.email;
-      console.log('New subscription started:', email);
+      const plan = session.metadata?.plan; // stamped in create-checkout-session.js
+      console.log('New subscription started:', email, 'plan:', plan);
       await addToMailerLite(email);
-      await upsertSupabaseSubscriber(email, 'active');
+      await upsertSupabaseSubscriber(email, 'active', plan);
       break;
     }
     case 'invoice.payment_failed': {

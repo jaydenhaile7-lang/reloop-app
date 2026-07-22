@@ -1,7 +1,11 @@
 // Vercel serverless function — starts a Reap video-clipping job for a
-// pasted YouTube link (or other public video URL). Requires the user to
-// be logged in via Supabase, same pattern as repurpose.js.
-// Requires SUPABASE_URL, SUPABASE_ANON_KEY, and REAP_API_KEY env vars.
+// pasted YouTube link (or other public video URL). Requires the user to be
+// logged in via Supabase AND on a tier that includes video clipping (Studio+),
+// with weekly-input quota remaining. Same enforcement pattern as repurpose.js.
+// Requires SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_KEY, and
+// REAP_API_KEY env vars.
+
+const { authorizeAction, recordUsage } = require('./_lib/plans');
 
 async function verifySupabaseUser(accessToken) {
   const res = await fetch(`${process.env.SUPABASE_URL}/auth/v1/user`, {
@@ -23,14 +27,27 @@ module.exports = async (req, res) => {
   const authHeader = req.headers.authorization || '';
   const token = authHeader.replace('Bearer ', '');
   const user = await verifySupabaseUser(token);
-  if (!user) {
+  if (!user || !user.email) {
     return res.status(401).json({ error: 'Not logged in.' });
   }
 
-  const { videoUrl, uploadId, mode, focus } = req.body || {};
+  // Subscription + video-permission + weekly-limit enforcement (backend-first).
+  // authorizeAction rejects tiers without video (Starter) and quota-exhausted users.
+  const auth = await authorizeAction(user.email, 'clip');
+  if (!auth.ok) {
+    return res.status(auth.status).json({ error: auth.error, upgrade: auth.upgrade });
+  }
+
+  const { videoUrl, uploadId, mode, focus, genre } = req.body || {};
   if ((!videoUrl || !videoUrl.trim()) && !uploadId) {
     return res.status(400).json({ error: 'Paste a video link or upload a file first.' });
   }
+
+  // Reap accepts exactly these three genres (visual format of the video, not its
+  // subject matter — that's what `mode`/prompt handles). Anything else is a 400
+  // from their API, so fall back to their default rather than trusting the client.
+  const VALID_GENRES = ['talking', 'screenshare', 'gaming'];
+  const safeGenre = VALID_GENRES.includes(genre) ? genre : 'talking';
 
   const MODE_PROMPTS = {
     highlight: 'Build a highlight reel of the very best moments in the video — peak energy, the strongest reactions, the most quotable lines, and the biggest emotional or visual climaxes. Prioritize moments that would still feel powerful out of context, and skip filler, intros, or set-up.',
@@ -50,9 +67,12 @@ module.exports = async (req, res) => {
   };
 
   const basePrompt = MODE_PROMPTS[mode] || 'Find the strongest standalone moments that work as short vertical clips for TikTok, Reels, and Shorts.';
-  const prompt = focus && focus.trim()
+  const combinedPrompt = focus && focus.trim()
     ? `${basePrompt} Additionally: ${focus.trim()}.`
     : basePrompt;
+  // Reap caps `prompt` at 1000 characters and rejects the whole job above that.
+  // The focus field is free text, so clamp rather than let a long note 400 out.
+  const prompt = combinedPrompt.length > 1000 ? combinedPrompt.slice(0, 1000) : combinedPrompt;
 
   const sourceFields = uploadId
     ? { uploadId }
@@ -67,7 +87,7 @@ module.exports = async (req, res) => {
       },
       body: JSON.stringify({
         ...sourceFields,
-        genre: 'talking',
+        genre: safeGenre,
         reframeClips: true,
         exportOrientation: 'portrait',
         exportResolution: 1080,
@@ -85,6 +105,8 @@ module.exports = async (req, res) => {
     }
 
     const data = await reapRes.json();
+    // Count this clip job against the weekly limit (after a successful start).
+    await recordUsage(user.email, 'clip');
     return res.status(200).json({ projectId: data.id, status: data.status });
   } catch (err) {
     console.error('clip-video error:', err);

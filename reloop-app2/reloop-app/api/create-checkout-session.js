@@ -33,7 +33,13 @@ module.exports = async (req, res) => {
       line_items: [{ price: priceId, quantity: 1 }],
       subscription_data: {
         trial_period_days: 14,
+        // Stamp the plan on the subscription too, so later events
+        // (cancellations, plan lookups) can still tell the tier.
+        metadata: { plan },
       },
+      // Stamp the plan on the checkout session so webhook.js can record which
+      // tier was purchased when checkout.session.completed fires.
+      metadata: { plan },
       success_url: `${origin}/success.html?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}/index.html`,
       allow_promotion_codes: true,
