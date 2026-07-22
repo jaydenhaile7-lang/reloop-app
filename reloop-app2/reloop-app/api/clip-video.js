@@ -38,7 +38,7 @@ module.exports = async (req, res) => {
     return res.status(auth.status).json({ error: auth.error, upgrade: auth.upgrade });
   }
 
-  const { videoUrl, uploadId, mode, focus, genre } = req.body || {};
+  const { videoUrl, uploadId, mode, focus, genre, length } = req.body || {};
   if ((!videoUrl || !videoUrl.trim()) && !uploadId) {
     return res.status(400).json({ error: 'Paste a video link or upload a file first.' });
   }
@@ -48,6 +48,16 @@ module.exports = async (req, res) => {
   // from their API, so fall back to their default rather than trusting the client.
   const VALID_GENRES = ['talking', 'screenshare', 'gaming'];
   const safeGenre = VALID_GENRES.includes(genre) ? genre : 'talking';
+
+  // Reap picks its own clip lengths when clipDurations is omitted, which in
+  // testing returned 54s and 84s clips — long for short-form. These map to the
+  // [min,max] second ranges Reap accepts.
+  const DURATION_PRESETS = {
+    short: [[0, 30]],
+    standard: [[30, 60]],
+    under60: [[0, 30], [30, 60]],
+  };
+  const clipDurations = DURATION_PRESETS[length] || DURATION_PRESETS.under60;
 
   const MODE_PROMPTS = {
     highlight: 'Build a highlight reel of the very best moments in the video — peak energy, the strongest reactions, the most quotable lines, and the biggest emotional or visual climaxes. Prioritize moments that would still feel powerful out of context, and skip filler, intros, or set-up.',
@@ -67,9 +77,16 @@ module.exports = async (req, res) => {
   };
 
   const basePrompt = MODE_PROMPTS[mode] || 'Find the strongest standalone moments that work as short vertical clips for TikTok, Reels, and Shorts.';
+
+  // Applied to every job regardless of mode. Without this, Reap will happily
+  // return the video's outro — a sign-off with a like/subscribe request and
+  // zero standalone value — because "strongest moment" doesn't exclude it.
+  const EXCLUSIONS =
+    ' Never select intros, outros, sign-offs, or moments where the speaker asks viewers to like, comment, subscribe or follow. Skip sponsor reads and channel plugs. Every clip must make sense on its own to someone who has never seen the source, and must open on the payoff rather than a wind-up.';
+
   const combinedPrompt = focus && focus.trim()
-    ? `${basePrompt} Additionally: ${focus.trim()}.`
-    : basePrompt;
+    ? `${basePrompt}${EXCLUSIONS} Additionally: ${focus.trim()}.`
+    : `${basePrompt}${EXCLUSIONS}`;
   // Reap caps `prompt` at 1000 characters and rejects the whole job above that.
   // The focus field is free text, so clamp rather than let a long note 400 out.
   const prompt = combinedPrompt.length > 1000 ? combinedPrompt.slice(0, 1000) : combinedPrompt;
@@ -88,6 +105,7 @@ module.exports = async (req, res) => {
       body: JSON.stringify({
         ...sourceFields,
         genre: safeGenre,
+        clipDurations,
         reframeClips: true,
         exportOrientation: 'portrait',
         exportResolution: 1080,

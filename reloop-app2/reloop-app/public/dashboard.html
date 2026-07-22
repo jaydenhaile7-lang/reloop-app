@@ -93,6 +93,12 @@ a{color:var(--signal); font-weight:600; text-decoration:none;}
 <input type="file" id="video-file" class="video-input" accept="video/mp4,video/quicktime">
 </div>
 <br>
+<select id="video-length" class="video-input" style="margin-top:10px;">
+<option value="under60">Clip length: under 60s (recommended)</option>
+<option value="short">Punchy — under 30s</option>
+<option value="standard">Standard — 30 to 60s</option>
+</select>
+<br>
 <select id="video-genre" class="video-input" style="margin-top:10px;">
 <option value="talking">Talking head / interview / podcast (most common)</option>
 <option value="screenshare">Screen share (tutorials, demos, walkthroughs)</option>
@@ -364,6 +370,7 @@ const fileInput = document.getElementById('video-file');
 const file = fileInput.files[0];
 const mode = document.getElementById('video-mode').value;
 const genre = document.getElementById('video-genre').value;
+const length = document.getElementById('video-length').value;
 const focus = document.getElementById('video-focus').value.trim();
 const errorMsg = document.getElementById('video-error-msg');
 const statusMsg = document.getElementById('video-status-msg');
@@ -420,7 +427,7 @@ headers: {
 'Content-Type': 'application/json',
 'Authorization': `Bearer ${session.access_token}`
 },
-body: JSON.stringify(usingFile ? { uploadId, mode, genre, focus } : { videoUrl, mode, genre, focus })
+body: JSON.stringify(usingFile ? { uploadId, mode, genre, length, focus } : { videoUrl, mode, genre, length, focus })
 });
 const data = await res.json();
 if (!res.ok) throw new Error(data.error || 'Something went wrong.');
