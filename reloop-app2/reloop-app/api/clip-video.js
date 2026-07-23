@@ -82,7 +82,7 @@ module.exports = async (req, res) => {
   // return the video's outro — a sign-off with a like/subscribe request and
   // zero standalone value — because "strongest moment" doesn't exclude it.
   const EXCLUSIONS =
-    ' Never select intros, outros, sign-offs, or moments where the speaker asks viewers to like, comment, subscribe or follow. Skip sponsor reads and channel plugs. Every clip must make sense on its own to someone who has never seen the source, and must open on the payoff rather than a wind-up.';
+    ' Never select intros, outros, sign-offs, or moments where the speaker asks viewers to like, comment, subscribe or follow. Skip sponsor reads and channel plugs. Every clip must make sense on its own to someone who has never seen the source. Start each clip at a clean sentence boundary, never mid-phrase, and never on a filler opener such as "I\'m not going to lie", "so", "and", "basically" or "um" — cut to where the payoff actually begins.';
 
   const combinedPrompt = focus && focus.trim()
     ? `${basePrompt}${EXCLUSIONS} Additionally: ${focus.trim()}.`
